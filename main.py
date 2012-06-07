@@ -27,17 +27,20 @@ class SocketConnection(sockjs.tornado.SockJSConnection):
 
     clients = set()
 
+    # Instantiate context only once
+    # TODO: it will be a good idea to create in somewhere in the application init method,
+    # but connection object does'nt have an access to it. Maybe we should put it into a SockRouter?
+    context = zmq.Context()
+
     def on_open(self, request):
         self.clients.add(self)
 
-        context = zmq.Context()
-
-        publisher = context.socket(zmq.PUB)
+        publisher = self.context.socket(zmq.PUB)
         publisher.bind(IPC_SOCKET)
 
         self.publish_stream = ZMQStream(publisher)
 
-        subscriber = context.socket(zmq.SUB)
+        subscriber = self.context.socket(zmq.SUB)
         subscriber.connect(IPC_SOCKET)
         subscriber.setsockopt(zmq.SUBSCRIBE, '')
 
@@ -52,6 +55,10 @@ class SocketConnection(sockjs.tornado.SockJSConnection):
 
     def on_close(self):
         self.clients.remove(self)
+
+        # Properly close ZMQ sockets
+        self.publish_stream.close()
+        self.subscribe_stream.close()
 
 if __name__ == '__main__':
     import logging
