@@ -1,0 +1,3 @@
+tornado==2.3
+pyzmq==2.2.0
+-e git+git://github.com/mrjoes/sockjs-tornado.git#egg=sockjs
